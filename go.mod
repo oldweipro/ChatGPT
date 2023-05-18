@@ -1,4 +1,4 @@
-module openai
+module github.com/oldweipro/chatgpt
 
 go 1.20
 

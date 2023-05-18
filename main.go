@@ -1,7 +1,7 @@
 package main
 
 import (
-	"openai/gin_server"
+	"github.com/oldweipro/chatgpt/gin_server"
 )
 
 func main() {

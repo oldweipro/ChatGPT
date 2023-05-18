@@ -3,9 +3,9 @@ package gin_server
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/oldweipro/chatgpt/chat"
 	"github.com/sashabaranov/go-openai"
 	"net/http"
-	"openai/chat"
 	"sync"
 	"time"
 )
