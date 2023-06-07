@@ -3,16 +3,21 @@ package chat
 import (
 	"bufio"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/go-resty/resty/v2"
 	"github.com/sashabaranov/go-openai"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 var messages []openai.ChatCompletionMessage
+var text string
 
 func RunCmdChatGPT(f func()) {
 	scanner := bufio.NewScanner(os.Stdin)
@@ -20,7 +25,7 @@ func RunCmdChatGPT(f func()) {
 		fmt.Print("提问：")
 		if scanner.Scan() {
 			// 获取用户输入的文本
-			text := scanner.Text()
+			text = scanner.Text()
 			// 打印用户输入的文本
 			messages = append(messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
@@ -94,4 +99,74 @@ func Base(config openai.ClientConfig) {
 		streamResponse += response.Choices[0].Delta.Content
 		fmt.Printf(response.Choices[0].Delta.Content)
 	}
+}
+
+func XinghuoChatMessage() {
+	client := resty.New()
+	formData := make(map[string]string)
+	formData["chatId"] = "1172758"
+	formData["clientType"] = "2"
+	formData["text"] = text
+	req := client.R().
+		SetHeader("Accept", "text/event-stream").
+		SetCookie(&http.Cookie{
+			Name:  "ssoSessionId",
+			Value: "登陆后获取",
+		}).
+		SetFormData(formData).SetDoNotParseResponse(true)
+	_, err := req.Get("https://xinghuo.xfyun.cn/iflygpt/u/chat-list/v1/chat-list")
+	if err != nil {
+		return
+	}
+	resp, _ := req.
+		Post("https://xinghuo.xfyun.cn/iflygpt/u/chat_message/chat")
+	defer func(body io.ReadCloser) {
+		err := body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(resp.RawBody())
+
+	buf := make([]byte, 1024)
+	textContent := ""
+	fmt.Printf("回答: ")
+	for {
+		n, err := resp.RawBody().Read(buf)
+		if err != nil && err != io.EOF {
+			log.Fatal(err)
+		}
+		if n == 0 {
+			break
+		}
+		msg := string(buf[:n])
+		if strings.Contains(msg, "<end>") {
+			break
+		}
+		result := processMsg(msg)
+		decodeString, msgErr := base64.StdEncoding.DecodeString(result)
+		if msgErr != nil {
+			fmt.Println(msg)
+			fmt.Println("base64解码失败")
+		}
+		textContent += string(decodeString)
+		fmt.Print(string(decodeString))
+	}
+	fmt.Println()
+}
+
+func processMsg(msg string) string {
+	if strings.Contains(msg, "data:") {
+		for _, str := range strings.Split(msg, "\n\n") {
+			if len(str) > 0 {
+				if strings.HasPrefix(str, "data:") {
+					return str[5:]
+				} else {
+					return str
+				}
+			}
+		}
+	} else {
+		return msg
+	}
+	return ""
 }

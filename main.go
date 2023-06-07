@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/oldweipro/chatgpt/gin_server"
+	"github.com/oldweipro/chatgpt/chat"
 )
 
 func main() {
-	//chat.RunCmdChatGPT(chat.CompletionStreamReverse)
-	gin_server.GinServer()
+	chat.RunCmdChatGPT(chat.XinghuoChatMessage)
+	//gin_server.GinServer()
 }
