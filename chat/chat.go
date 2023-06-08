@@ -107,6 +107,7 @@ func XinghuoChatMessage() {
 	formData := make(map[string]string)
 	formData["chatId"] = "4422137"
 	formData["GtToken"] = ""
+	formData["fd"] = ""
 	formData["clientType"] = "2"
 	formData["text"] = text
 	//vcn params is empty;code=11119是什么错误
