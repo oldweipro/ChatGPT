@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 var messages []openai.ChatCompletionMessage
@@ -22,7 +23,7 @@ var text string
 func RunCmdChatGPT(f func()) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Print("提问：")
+		fmt.Printf("%s 提问: ", time.Now().Format("2006-01-02 15:04:05"))
 		if scanner.Scan() {
 			// 获取用户输入的文本
 			text = scanner.Text()
@@ -31,6 +32,7 @@ func RunCmdChatGPT(f func()) {
 				Role:    openai.ChatMessageRoleUser,
 				Content: text,
 			})
+			fmt.Printf("%s 回答: ", time.Now().Format("2006-01-02 15:04:05"))
 			f()
 		} else {
 			// 如果出现了错误，则退出循环
@@ -81,7 +83,6 @@ func Base(config openai.ClientConfig) {
 	}
 	defer stream.Close()
 
-	fmt.Printf("回答: ")
 	var streamResponse string
 	for {
 		response, err := stream.Recv()
@@ -104,22 +105,21 @@ func Base(config openai.ClientConfig) {
 func XinghuoChatMessage() {
 	client := resty.New()
 	formData := make(map[string]string)
-	formData["chatId"] = "1172758"
+	formData["chatId"] = "4422137"
+	formData["GtToken"] = ""
 	formData["clientType"] = "2"
 	formData["text"] = text
-	req := client.R().
+	//vcn params is empty;code=11119是什么错误
+	resp, _ := client.R().
 		SetHeader("Accept", "text/event-stream").
+		SetHeader("Referer", "https://xinghuo.xfyun.cn/chat?id="+formData["chatId"]).
+		SetHeader("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1").
 		SetCookie(&http.Cookie{
 			Name:  "ssoSessionId",
-			Value: "登陆后获取",
+			Value: "",
 		}).
-		SetFormData(formData).SetDoNotParseResponse(true)
-	_, err := req.Get("https://xinghuo.xfyun.cn/iflygpt/u/chat-list/v1/chat-list")
-	if err != nil {
-		return
-	}
-	resp, _ := req.
-		Post("https://xinghuo.xfyun.cn/iflygpt/u/chat_message/chat")
+		SetFormData(formData).SetDoNotParseResponse(true).
+		Post("https://xinghuo.xfyun.cn/iflygpt-chat/u/chat_message/chat")
 	defer func(body io.ReadCloser) {
 		err := body.Close()
 		if err != nil {
@@ -129,7 +129,6 @@ func XinghuoChatMessage() {
 
 	buf := make([]byte, 1024)
 	textContent := ""
-	fmt.Printf("回答: ")
 	for {
 		n, err := resp.RawBody().Read(buf)
 		if err != nil && err != io.EOF {
