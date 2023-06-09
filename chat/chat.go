@@ -153,6 +153,66 @@ func XinghuoChatMessage() {
 	}
 	fmt.Println()
 }
+func XinghuoChatMessageApp() {
+	client := resty.New()
+	formData := make(map[string]string)
+	formData["chatId"] = "4582237"
+	formData["GtToken"] = ""
+	// 正常对话不需要填写。如果使用助手值为1
+	formData["isBot"] = "1"
+	// 助手ID
+	formData["botId"] = "1626"
+	// app
+	formData["clientType"] = "4"
+	formData["text"] = text
+	//vcn params is empty;code=11119是什么错误
+	resp, _ := client.R().
+		SetHeader("Accept", "text/event-stream").
+		SetHeader("User-Agent", "okhttp/4.11.0").
+		SetHeader("Host", "xinghuo.xfyun.cn").
+		SetHeader("app", "xinghuo").
+		SetHeader("clientType", "4").
+		SetHeader("platform", "android").
+		SetHeader("versionCode", "2023061002").
+		SetHeader("Accept-Encoding", "gzip").
+		SetCookie(&http.Cookie{
+			Name:  "ssoSessionId",
+			Value: "",
+		}).
+		SetFormData(formData).SetDoNotParseResponse(true).
+		Post("https://xinghuo.xfyun.cn/iflygpt-chat/u/chat_message/chat")
+	defer func(body io.ReadCloser) {
+		err := body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(resp.RawBody())
+
+	buf := make([]byte, 1024)
+	textContent := ""
+	for {
+		n, err := resp.RawBody().Read(buf)
+		if err != nil && err != io.EOF {
+			log.Fatal(err)
+		}
+		if n == 0 {
+			break
+		}
+		msg := string(buf[:n])
+		if strings.Contains(msg, "<end>") {
+			break
+		}
+		result := processMsg(msg)
+		decodeString, msgErr := base64.StdEncoding.DecodeString(result)
+		if msgErr != nil {
+			fmt.Println(msg)
+			fmt.Println("base64解码失败")
+		}
+		textContent += string(decodeString)
+		fmt.Print(string(decodeString))
+	}
+	fmt.Println()
+}
 
 func processMsg(msg string) string {
 	if strings.Contains(msg, "data:") {
@@ -169,4 +229,21 @@ func processMsg(msg string) string {
 		return msg
 	}
 	return ""
+}
+
+func Loop() {
+	// Create a goroutine to run the task every 10 minutes
+	go func() {
+		for {
+			// Print "hello world"
+			text = "行政人事"
+			fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
+			XinghuoChatMessageApp()
+			// Sleep for 10 minutes
+			time.Sleep(10 * time.Minute)
+		}
+	}()
+
+	// Keep the main goroutine running indefinitely
+	select {}
 }
