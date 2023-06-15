@@ -33,6 +33,10 @@ func RunCmdChatGPT(f func()) {
 			messages = append(messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
 				Content: text,
+				FunctionCall: &openai.FunctionCall{
+					Name:      "",
+					Arguments: "",
+				},
 			})
 			fmt.Printf("%s 回答: ", time.Now().Format("2006-01-02 15:04:05"))
 			f()
