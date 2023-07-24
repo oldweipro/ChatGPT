@@ -18,10 +18,10 @@ import (
 	"time"
 )
 
-var messages []openai.ChatCompletionMessage
-var text = "你好讯飞"
+var Messages []openai.ChatCompletionMessage
+var PromptText = "你好讯飞"
 
-const Base64 = ""
+const Base64String = ""
 
 var functions = `[{
 "name": "get_current_weather",
@@ -49,22 +49,14 @@ func RunCmdChatGPT(f func()) {
 		fmt.Printf("%s 提问: ", time.Now().Format("2006-01-02 15:04:05"))
 		if scanner.Scan() {
 			// 获取用户输入的文本
-			text = scanner.Text()
+			PromptText = scanner.Text()
 			// 打印用户输入的文本sssjjjjdhjksahk
 			fmt.Println("")
-			marshal, _ := json.Marshal(functions)
-			messages = append(messages, openai.ChatCompletionMessage{
+			Messages = append(Messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
-				Content: text,
+				Content: PromptText,
 			})
-			messages = append(messages, openai.ChatCompletionMessage{
-				Role: openai.ChatMessageRoleAssistant,
-				Name: "get_current_weather",
-				FunctionCall: &openai.FunctionCall{
-					Name:      "get_current_weather",
-					Arguments: string(marshal),
-				},
-			})
+			//AddFunctionCalling()
 			fmt.Printf("%s 回答: ", time.Now().Format("2006-01-02 15:04:05"))
 			f()
 		} else {
@@ -78,6 +70,7 @@ func RunCmdChatGPT(f func()) {
 
 func CompletionStreamKey() {
 	config := openai.DefaultConfig("")
+	//config.BaseURL = "https://api.chat.oldwei.com/v1"
 	// 如果需要代理，请配置代理地址，如不需要可注释或删掉以下代码
 	config.HTTPClient.Transport = &http.Transport{
 		// 设置Transport字段为自定义Transport，包含代理设置
@@ -106,7 +99,7 @@ func Base(config openai.ClientConfig) {
 	req := openai.ChatCompletionRequest{
 		Model:     openai.GPT3Dot5Turbo16K0613,
 		MaxTokens: 1000,
-		Messages:  messages,
+		Messages:  Messages,
 		Stream:    true,
 	}
 	stream, err := client.CreateChatCompletionStream(ctx, req)
@@ -121,7 +114,7 @@ func Base(config openai.ClientConfig) {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
 			fmt.Println()
-			messages = append(messages, openai.ChatCompletionMessage{
+			Messages = append(Messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleAssistant,
 				Content: streamResponse,
 			})
@@ -149,7 +142,7 @@ func SparkChatMessageApp() {
 	formData["botId"] = "0"
 	// app
 	formData["clientType"] = "4"
-	formData["text"] = text
+	formData["text"] = PromptText
 	//vcn params is empty;code=11119是什么错误
 	resp, _ := client.R().
 		SetHeader("Accept", "text/event-stream").
@@ -216,19 +209,14 @@ func processMsg(msg string) string {
 	return ""
 }
 
-func Loop() {
-	// Create a goroutine to run the task every 10 minutes
-	go func() {
-		for {
-			// Print "hello world"
-			text = "行政人事"
-			fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
-			SparkChatMessageApp()
-			// Sleep for 10 minutes
-			time.Sleep(10 * time.Minute)
-		}
-	}()
-
-	// Keep the main goroutine running indefinitely
-	select {}
+func AddFunctionCalling() {
+	marshal, _ := json.Marshal(functions)
+	Messages = append(Messages, openai.ChatCompletionMessage{
+		Role: openai.ChatMessageRoleAssistant,
+		Name: "get_current_weather",
+		FunctionCall: &openai.FunctionCall{
+			Name:      "get_current_weather",
+			Arguments: string(marshal),
+		},
+	})
 }
