@@ -88,7 +88,7 @@ func CompletionStreamKey() {
 
 func CompletionStreamReverse() {
 	config := openai.DefaultConfig("")
-	config.BaseURL = "http://127.0.0.1:8080/v1"
+	config.BaseURL = "http://127.0.0.1:8787/v1"
 	Base(config)
 }
 
