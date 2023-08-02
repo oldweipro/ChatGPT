@@ -50,8 +50,6 @@ func RunCmdChatGPT(f func()) {
 		if scanner.Scan() {
 			// 获取用户输入的文本
 			PromptText = scanner.Text()
-			// 打印用户输入的文本sssjjjjdhjksahk
-			fmt.Println("")
 			Messages = append(Messages, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
 				Content: PromptText,
